@@ -23,8 +23,8 @@ required.add_argument('-g', '--genome', help='genome annotation file path (gff/g
 
 # optional
 optional.add_argument('-o', '--outPath', help='path to output directory.', default='.')
-optional.add_argument('-w', help='distance upstream and downstream of exon to be displayed Default=300 bp', type=int, dest='winwidth', default=300)
-optional.add_argument('-e', help='standardized exon length - to be used for condensing coverage for all exons to a single length for output plots Default=1000', type=int, dest='exonsize', default=1000)
+optional.add_argument('-w', '--winwidth', help='distance upstream and downstream of exon to be displayed Default=300 bp', type=int, dest='winwidth', default=300)
+optional.add_argument('-e', '--exonsize', help='standardized exon length - to be used for condensing coverage for all exons to a single length for output plots Default=1000', type=int, dest='exonsize', default=1000)
 
 #initialize values
 
@@ -74,14 +74,14 @@ for file in bamlist:
 	    		almnt.iv.length = almnt.iv.end
 	    	coverage[ almnt.iv ] += 1  # add 1 to coverage for each aligned "fragment"
 
-	tsspos = list()
+	exonpos = list()
 	for feature in gtffile:
 	    if feature.type == "gene":
-	       tsspos.append( [feature.iv.start_d_as_pos, feature.iv.end_d_as_pos] ) # read gene/exon coordinates
+	       exonpos.append( [feature.iv.start_d_as_pos, feature.iv.end_d_as_pos] ) # read gene/exon coordinates
 
 	profile = numpy.zeros( 2*winwidth + exonsize , dtype='f' ) # average local (for current bam) coverage profile
 
-	for p in tsspos:
+	for p in exonpos:
 	    if p[0].pos<p[1].pos: # positive strand
 	        exon = HTSeq.GenomicInterval( p[0].chrom, p[0].pos , p[1].pos , "." )
 	        upstream = HTSeq.GenomicInterval( p[0].chrom, p[0].pos - winwidth, p[0].pos, "." )
@@ -122,11 +122,11 @@ for file in bamlist:
 	profile_global = profile_global + profile_smooth # Add profile to global profile
 
 	# Check if any point in profile has the maximum or minimum value compared to other profiles
-	# for i in numpy.arange(0,len(profile_smooth)):
-	# 	if profile_smooth[i] < profile_global_min[i]:
-	# 		profile_global_min[i]=profile_smooth[i]
-	# 	if profile_smooth[i] > profile_global_max[i]:
-	# 		profile_global_max[i]=profile_smooth[i]
+	for i in numpy.arange(0,len(profile_smooth)):
+		if profile_smooth[i] < profile_global_min[i]:
+			profile_global_min[i]=profile_smooth[i]
+		if profile_smooth[i] > profile_global_max[i]:
+			profile_global_max[i]=profile_smooth[i]
     
     ### Normalization ###
 
@@ -145,22 +145,22 @@ for file in bamlist:
 	
 	###This part is for plotting profiles from individual bams to separate files ### Comment out if these aren't needed ###
 
-	# pyplot.style.use('ggplot')
-	# pyplot.plot( x_coord_smooth, profile_smooth, color="blue")
-	# pyplot.title(outfile)
-	# pyplot.axvline(x=0, ls="-.", lw="2")
-	# pyplot.axvline(x=exonsize, ls="-.", lw="2")
-	# pyplot.xlabel('ESS = exon start site     Position     EES = exon end site')
-	# pyplot.ylabel('Normalized Density')
-	# pyplot.ylim( ymax=max(profile)+1)
-	# pyplot.xticks([-winwidth, -winwidth/2, 0, exonsize/4, exonsize/2, 3*exonsize/4, exonsize, exonsize + (winwidth/2), exonsize +winwidth], [-winwidth, -round(winwidth/2),'ESS', '25%', '50%', '75%', 'EES', round(winwidth/2), winwidth])
-	# pyplot.savefig(outdir+"/"+outfile+"_exoncoverage.png")
-	# pyplot.close()
+	pyplot.style.use('ggplot')
+	pyplot.plot( x_coord_smooth, profile_smooth, color="blue")
+	pyplot.title(outfile)
+	pyplot.axvline(x=0, ls="-.", lw="2")
+	pyplot.axvline(x=exonsize, ls="-.", lw="2")
+	pyplot.xlabel('ESS = exon start site     Position     EES = exon end site')
+	pyplot.ylabel('Normalized Density')
+	pyplot.ylim( ymax=max(profile)+1)
+	pyplot.xticks([-winwidth, -winwidth/2, 0, exonsize/4, exonsize/2, 3*exonsize/4, exonsize, exonsize + (winwidth/2), exonsize +winwidth], [-winwidth, -round(winwidth/2),'ESS', '25%', '50%', '75%', 'EES', round(winwidth/2), winwidth])
+	pyplot.savefig(outdir+"/"+outfile+"_exoncoverage.png")
+	pyplot.close()
 	
 	### This part is to output coverage data as csvs for individual bam files ### Comment out if these aren't needed ###
 
-	# coverage_list=pd.DataFrame({"coordinate" : x_coord_smooth, "normalized coverage" : profile_smooth})
-	# coverage_list.to_csv(outdir+"/"+outfile+"_exoncoverage.csv", index=False)
+	coverage_list=pd.DataFrame({"coordinate" : x_coord_smooth, "normalized coverage" : profile_smooth})
+	coverage_list.to_csv(outdir+"/"+outfile+"_exoncoverage.csv", index=False)
 	print('1 (more) instance complete')  #to check progress when dealing with a lot of files
 
 
@@ -171,12 +171,13 @@ profile_global=profile_global/filenumber # divide sum of all profiles by number 
 p_max=numpy.amax(profile_global)
 p_min=numpy.amin(profile_global)
 profile_global = (profile_global-p_min)/(p_max-p_min)
-# p_max=numpy.amax(profile_global_max)
-# p_min=numpy.amin(profile_global_max)
-# profile_global_max = (profile_global_max-p_min)/(p_max-p_min)
-# p_max=numpy.amax(profile_global_min)
-# p_min=numpy.amin(profile_global_min)
-# profile_global_min = (profile_global_min-p_min)/(p_max-p_min)
+
+p_max=numpy.amax(profile_global_max)
+p_min=numpy.amin(profile_global_max)
+profile_global_max = (profile_global_max-p_min)/(p_max-p_min)
+p_max=numpy.amax(profile_global_min)
+p_min=numpy.amin(profile_global_min)
+profile_global_min = (profile_global_min-p_min)/(p_max-p_min)
 
 # Normalize by mean
 # profile_global *= len(profile_global)/sum(profile_global)  # Normalize average coverage profile by mean coverage per base over profile
@@ -201,3 +202,9 @@ pyplot.close()
 
 coverage_list=pd.DataFrame({"coordinate" : x_coord_smooth, "normalized coverage" : profile_global, })
 coverage_list.to_csv(outdir+"/global_exoncoverage.csv", index=False)
+
+coverage_list_max=pd.DataFrame({"coordinate" : x_coord_smooth, "normalized coverage" : profile_global_max, })
+coverage_list_max.to_csv(outdir+"/global_exoncoverage_maximum.csv", index=False)
+
+coverage_list_min=pd.DataFrame({"coordinate" : x_coord_smooth, "normalized coverage" : profile_global_min, })
+coverage_list_min.to_csv(outdir+"/global_exoncoverage_minimum.csv", index=False)
