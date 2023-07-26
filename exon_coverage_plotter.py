@@ -5,7 +5,7 @@ import HTSeq
 import numpy
 from matplotlib import pyplot
 import argparse
-from scipy.interpolate import spline
+from scipy.interpolate import interp1d
 import csv
 import pandas as pd
 
@@ -117,7 +117,7 @@ for file in bamlist:
 	        profile += wincvg[::-1] # reverse the coverage array if transcription direction is opposite
 
 	profile = profile/readnumber # normalize by readnumber
-	profile_smooth = spline(x_coord, profile, x_coord_smooth)
+	profile_smooth = interp1d(x_coord, profile, x_coord_smooth)
 
 	profile_global = profile_global + profile_smooth # Add profile to global profile
 
