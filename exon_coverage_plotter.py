@@ -36,7 +36,6 @@ gtffile = HTSeq.GFF_Reader(str(args.genome))
 outdir=str(args.outPath)
 winwidth = int(args.winwidth)
 exonsize=int(args.exonsize)
-fragmentsize = 200 # This sets size of alignment to 200 as 200 bp is more representative of standard fragment length than the observed readlength 
 
 
 
@@ -68,10 +67,6 @@ for file in bamlist:
 	for almnt in bamfile:
 	    readnumber+=1
 	    if almnt.aligned:
-	    	if almnt.iv.end > fragmentsize:
-	    		almnt.iv.length = fragmentsize
-	    	else:
-	    		almnt.iv.length = almnt.iv.end
 	    	coverage[ almnt.iv ] += 1  # add 1 to coverage for each aligned "fragment"
 
 	exonpos = list()
